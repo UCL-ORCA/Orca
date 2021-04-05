@@ -1,0 +1,42 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "webAppName": {
+            "value": WEB_APP_NAME
+        },
+        "alwaysOn": {
+            "value": false
+        },
+        "sharepointUrl": {
+            "value": SHAREPOINT_URL
+        },
+        "sharepointClientId": {
+            "value": SHAREPOINT_CLIENT_ID
+        },
+        "sharepointClientSecret": {
+            "value": SHAREPOINT_CLIENT_SECRET
+        },
+        "msGraphAppId": {
+            "value": MS_GRAPH_APP_ID
+        },
+        "msGraphClientSecret": {
+            "value": MS_GRAPH_CLIENT_SECRET
+        },
+        "tenantId": {
+            "value": TENANT_ID
+        },
+        "caliperApiKey": {
+            "value": CALIPER_API_KEY
+        },
+        "databaseName": {
+            "value": DB_NAME
+        },
+        "databaseUsername": {
+            "value": "orca_admin"
+        },
+        "databasePassword": {
+            "value": DB_PASSWORD
+        }
+    }
+}
