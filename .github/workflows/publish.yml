@@ -1,0 +1,45 @@
+name: Publish
+
+on:
+    workflow_dispatch:
+
+jobs:
+  publish:
+
+    runs-on: ubuntu-latest
+    env:
+      PUBLISH_ARGS: Orca/Orca.csproj -c Release --self-contained
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+    - name: Build
+      run: dotnet build --no-restore
+    - name: Test
+      run: dotnet test --no-build
+
+    - name: Embed linux binaries into code so that Azure deployment script can update webapp with latest version
+      run: dotnet publish $PUBLISH_ARGS -r linux-x64 -o orca-azure-linux && (cd orca-azure-linux/ && zip -r ../orca-azure-linux .) && mv orca-azure-linux.zip Orca/Scripts/AzureResourceManager
+    
+    - name: Publish windows binaries
+      run: dotnet publish $PUBLISH_ARGS -r win-x64 -o orca-windows && zip -r orca-windows ./orca-windows
+    
+    - name: Publish linux binaries
+      run: dotnet publish $PUBLISH_ARGS -r linux-x64 -o orca-linux && zip -r orca-linux ./orca-linux
+    
+    - name: Publish macos binaries
+      run: dotnet publish $PUBLISH_ARGS -r osx-x64 -o orca-macos && zip -r orca-macos ./orca-macos
+    
+    - name: Upload binaries as Release
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: "orca-windows.zip,orca-linux.zip,orca-macos.zip"
+        bodyFile: "README.md"
+        token: ${{ secrets.GITHUB_TOKEN }}
+        tag: "1.0"
+        allowUpdates: true

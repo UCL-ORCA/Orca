@@ -1,0 +1,274 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "type": "string",
+            "defaultValue": "[resourceGroup().location]"
+        },
+        "webAppName": {
+            "type": "string",
+            "metadata": {
+                "definition": "The name that will be given to the webapp (e.g. orca). Must be unique as it will form the domain [webAppName].azurewebsites.net"
+            }
+        },
+        "alwaysOn": {
+            "type": "bool"
+        },
+        "sharepointUrl": {
+            "type": "string"
+        },
+        "sharepointClientId": {
+            "type": "string"
+        },
+        "sharepointClientSecret": {
+            "type": "string"
+        },
+        "msGraphAppId": {
+            "type": "string"
+        },
+        "msGraphClientSecret": {
+            "type": "string"
+        },
+        "tenantId": {
+            "type": "string"
+        },
+        "caliperApiKey": {
+            "type": "string"
+        },
+        "databaseName": {
+            "type": "string",
+            "metadata": {
+                "definition": "The name that will be given to the database (e.g. orcadb). Must be unique as it will form the domain [databaseName].postgres.database.azure.com"
+            }
+        },
+        "databaseUsername": {
+            "type": "string"
+        },
+        "databasePassword": {
+            "type": "securestring"
+        },
+        "sku": {
+            "type": "string",
+            "defaultValue": "Free",
+            "metadata": {
+                "definition": "The Azure App Service Plan tier to run the ORCA webserver. See https://azure.microsoft.com/en-us/pricing/details/app-service/linux/"
+            }
+        },
+        "skuCode": {
+            "type": "string",
+            "defaultValue": "F1",
+            "metadata": {
+                "definition": "The Azure App Service SKU code to run the ORCA webserver. See https://azure.microsoft.com/en-us/pricing/details/app-service/linux/"
+            }
+        },
+        "workerSize": {
+            "type": "string",
+            "defaultValue": "0"
+        },
+        "workerSizeId": {
+            "type": "string",
+            "defaultValue": "0"
+        },
+        "numberOfWorkers": {
+            "type": "string",
+            "defaultValue": "1",
+            "metadata": {
+                "definition": "The number of webserver replicas"
+            }
+        },
+        "databaseVersion": {
+            "type": "string",
+            "defaultValue": "11"
+        },
+        "databaseSkuName": {
+            "type": "string",
+            "defaultValue": "B_Gen5_1",
+            "metadata": {
+                "definition": "For information about Azure PostgreSQL SKU tiers pricing options, see https://docs.microsoft.com/en-us/azure/postgresql/concepts-pricing-tiers"
+            }
+        },
+        "databaseSkuTier": {
+            "type": "string",
+            "defaultValue": "Basic"
+        },
+        "databaseSkuCapacity": {
+            "type": "int",
+            "defaultValue": 1
+        },
+        "databaseSkuFamily": {
+            "type": "string",
+            "defaultValue": "Gen5"
+        },
+        "databaseSizeMB": {
+            "type": "int",
+            "defaultValue": 51200
+        },
+        "backupRetentionDays": {
+            "type": "int",
+            "defaultValue": 7
+        }
+    },
+    "variables": {
+        "appServicePlanName": "[concat('AppServicePlan-', parameters('webAppName'))]",
+        "appSettingsWithoutDb": [
+            {
+                "name": "Orca__Caliper__ApiKey",
+                "value": "[parameters('caliperApiKey')]"
+            },
+            {
+                "name": "Orca__MsGraph__AppId",
+                "value": "[parameters('msGraphAppId')]"
+            },
+            {
+                "name": "Orca__MsGraph__ClientSecret",
+                "value": "[parameters('msGraphClientSecret')]"
+            },
+            {
+                "name": "Orca__MsGraph__TenantId",
+                "value": "[parameters('tenantId')]"
+            },
+            {
+                "name": "Orca__MsGraph__Domain",
+                "value": "[concat('https://', parameters('webAppName'), '.azurewebsites.net')]"
+            },
+            {
+                "name": "Orca__Sharepoint__SharepointUrl",
+                "value": "[parameters('sharepointUrl')]"
+            },
+            {
+                "name": "Orca__Sharepoint__ClientId",
+                "value": "[parameters('sharepointClientId')]"
+            },
+            {
+                "name": "Orca__Sharepoint__ClientSecret",
+                "value": "[parameters('sharepointClientSecret')]"
+            }
+        ],
+        "dbAppSettings": [
+            {
+                "name": "Orca__Database__Database",
+                "value": "[parameters('databaseName')]"
+            },
+            {
+                "name": "Orca__Database__Password",
+                "value": "[if(empty(parameters('databasePassword')),json('null'),parameters('databasePassword'))]"
+            },
+            {
+                "name": "Orca__Database__Servername",
+                "value": "[if(empty(parameters('databaseName')),json('null'),concat(parameters('databaseName'), '.postgres.database.azure.com'))]"
+            },
+            {
+                "name": "Orca__Database__Username",
+                "value": "[if(empty(parameters('databaseUsername')),json('null'),concat(parameters('databaseUsername'), '@', parameters('databaseName')))]"
+            }
+        ]
+    },
+    "resources": [
+        {
+            "apiVersion": "2018-11-01",
+            "name": "[parameters('webAppName')]",
+            "type": "Microsoft.Web/sites",
+            "location": "[parameters('location')]",
+            "tags": {},
+            "dependsOn": [
+                "[concat('Microsoft.Web/serverfarms/', variables('appServicePlanName'))]"
+            ],
+            "properties": {
+                "name": "[parameters('webAppName')]",
+                "siteConfig": {
+                    "appSettings": "[if(empty(parameters('databasePassword')), variables('appSettingsWithoutDb'), union(variables('appSettingsWithoutDb'), variables('dbAppSettings')) )]",
+                    "linuxFxVersion": "DOTNETCORE|5.0",
+                    "alwaysOn": "[parameters('alwaysOn')]"
+                },
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('appServicePlanName'))]",
+                "clientAffinityEnabled": false,
+                "httpsOnly": true
+            },
+            "resources": [
+                {
+                    "apiVersion": "2018-11-01",
+                    "name": "logs",
+                    "type": "config",
+                    "dependsOn": [
+                        "[resourceId('Microsoft.Web/Sites', parameters('webAppName'))]"
+                    ],
+                    "properties": {
+                        "httpLogs": {
+                            "fileSystem": {
+                                "retentionInMb": 100,
+                                "retentionInDays": 7,
+                                "enabled": true
+                            }
+                        },
+                        "detailedErrorMessages": {
+                            "enabled": true
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "apiVersion": "2018-11-01",
+            "name": "[variables('appServicePlanName')]",
+            "type": "Microsoft.Web/serverfarms",
+            "location": "[parameters('location')]",
+            "kind": "linux",
+            "tags": {},
+            "dependsOn": [],
+            "properties": {
+                "name": "[variables('appServicePlanName')]",
+                "workerSize": "[parameters('workerSize')]",
+                "workerSizeId": "[parameters('workerSizeId')]",
+                "numberOfWorkers": "[parameters('numberOfWorkers')]",
+                "reserved": true
+            },
+            "sku": {
+                "Tier": "[parameters('sku')]",
+                "Name": "[parameters('skuCode')]"
+            }
+        },
+      {
+        "apiVersion": "2017-12-01",
+        "kind": "",
+        "location": "[parameters('location')]",
+        "name": "[parameters('databaseName')]",
+        "condition": "[not(empty(parameters('databasePassword')))]",
+        "properties": {
+          "version": "[parameters('databaseVersion')]",
+          "administratorLogin": "[parameters('databaseUsername')]",
+          "administratorLoginPassword": "[parameters('databasePassword')]",
+          "storageProfile": {
+            "storageMB": "[parameters('databaseSizeMB')]",
+            "backupRetentionDays": "[parameters('backupRetentionDays')]",
+            "geoRedundantBackup": "Disabled",
+            "storageAutoGrow": "Disabled"
+          },
+          "previewFeature": "",
+          "infrastructureEncryption": "Disabled"
+        },
+        "sku": {
+          "name": "[parameters('databaseSkuName')]",
+          "tier": "[parameters('databaseSkuTier')]",
+          "capacity": "[parameters('databaseSkuCapacity')]",
+          "size": "[parameters('databaseSizeMB')]",
+          "family": "[parameters('databaseSkuFamily')]"
+        },
+        "tags": {},
+        "type": "Microsoft.DBforPostgreSQL/servers"
+      },
+      {
+        "type": "Microsoft.DBforPostgreSQL/servers/firewallRules",
+        "apiVersion": "2017-12-01",
+        "name": "[concat(parameters('databaseName'), '/AllowAllWindowsAzureIps')]",
+        "dependsOn": [
+          "[resourceId('Microsoft.DBforPostgreSQL/servers', parameters('databaseName'))]"
+        ],
+        "condition": "[not(empty(parameters('databasePassword')))]",
+        "properties": {
+          "startIpAddress": "0.0.0.0",
+          "endIpAddress": "0.0.0.0"
+        }
+      }
+    ]
+}
