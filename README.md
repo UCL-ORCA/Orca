@@ -1,6 +1,7 @@
 # Orca
 ORCA is a system which allows academic institutions to gain insights about students' attendance and engagement with online platforms, most notably Moodle and Microsoft Teams. ORCA records student attendance per course as attendance lists on an institution's Sharepoint site, and overall engagement can be visualized through interactive Power BI reports.
-Schools and universities can deploy ORCA on their own IT infrastructure or on the Azure cloud. 
+Schools and universities can deploy ORCA on their own IT infrastructure or on the Azure cloud.  
+**Developed by:** Emeralda Sesari, Khesim Reid, Arzhan Tong, Xinyuan Zhuang, Omar Beyhum, Lydia Tsami, Yanke Zhang, Chon Ng, Elena Aleksieva, Zisen Lin, Yang Fan, Yifei Zhao
 
 # Installation
 
